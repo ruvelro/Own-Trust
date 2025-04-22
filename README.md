@@ -138,7 +138,8 @@ El resultado final de la estructura de datos será así:
 │   └── config/
 │       ├── traefik.yml
 │       └── dynamic/
-│           └── dynamic.yml
+│           ├── dynamic.yml
+│           └── certs.yml
 └── authelia/
     ├── configuration.yml
     ├── db.sqlite3
