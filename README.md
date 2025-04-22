@@ -92,8 +92,62 @@ Visto ya todo esto, empecemos con la configuración.
 
 ## 🛠️ Pasos Iniciales [En desarrollo]
 
+El proyecto está diseñado sobre Ubuntu 24.04 LTS, aunque debería funcionar en cualquier distro Linux (o Windows, o macOS) al estar basado en Docker. Tan solo aseguraté de tener Docker y Docker Compose instalado en tu servidor.
+
+### 🐋 Instalar Docker y Docker Compose en Ubuntu 24.04
+
+```bash
+# Actualiza los paquetes
+sudo apt update && sudo apt upgrade -y
+
+# Instala dependencias necesarias
+sudo apt install -y ca-certificates curl gnupg
+
+# Añade la clave GPG oficial de Docker
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Añade el repositorio de Docker
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Instala Docker y Docker Compose
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Añade tu usuario al grupo docker (opcional)
+sudo usermod -aG docker $USER
+```
+### 📁 Crear estructura de directorios
+A continuación, crea la estructura de directorios que vamos a usar para Traefik y Authelia.
+
+```
+mkdir -p /Docker/traefik/{certs,config/dynamic}
+mkdir -p /Docker/authelia
+touch /Docker/traefik/config/traefik.yml
+touch /Docker/traefik/config/dynamic/dynamic.yml
+```
+El resultado final de la estructura de datos será así:
+```
+~/Docker/
+├── traefik/
+│   ├── certs/
+│   └── config/
+│       ├── traefik.yml
+│       └── dynamic/
+│           └── dynamic.yml
+└── authelia/
+    ├── configuration.yml
+    ├── db.sqlite3
+    ├── notification.txt
+    └── users_database.yml
+```
+(los ficheros de "authelia" no hay que crearlos con touch, los crea el propio servicio).
+
 ### 1️⃣ Generar los certificados SSL Wildcard
-Antes de instalar nada, asegúrate de generar tus certificados **SSL wildcard** usando la API de Cloudflare.
 
 ### 2️⃣ Instalar Traefik
 
