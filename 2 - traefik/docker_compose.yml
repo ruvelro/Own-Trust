@@ -116,7 +116,7 @@ services:
     image: portainer/portainer-ce:sts
     restart: always
     networks:
-      - ruvelronet
+      - mired
     ports:
       - 9000:9000
     security_opt:
