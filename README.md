@@ -262,6 +262,7 @@ Dentro del directorio `traefik/` del repositorio encontrarás:
   - Middlewares
   - Servicios externos (fuera de Docker, como Plex o Cockpit)
   - ⚠️ Para servicios en Docker, mejor usar `labels`.
+  - El Geo-Bloqueo está configurado para bloquear por defecto todo el tráfico que venga desde fuera de España. Tenlo en cuenta.
 
 ---
 
@@ -297,6 +298,20 @@ Una vez copiados los archivos al servidor (`docker-compose.yml` y carpeta `traef
   - Aplica esto a todos los servicios **añadidos a mano** (no en Docker).
 
 ---
+
+Ya solo nos queda desplegar el Docker Compose con el comando "sudo docker compose up -d --remove-orphans" y esperar a que todo se monte bien. En pocos minutos deberíamos tener instalado el DDNS de Cloudflare, Traefik, Whoami y Portainer. Y todo debería estar funcionando correctamente. 
+
+![image](https://github.com/user-attachments/assets/46943d14-2c07-414a-9c93-14995de8736d)
+
+
+Podemos comprobarlo fácilmente:
+-Entrando en "192.168.X.X:8999 deberíamos ver la web de Traefik. En ella debería aparecer todo en verde. Y deberíamos tener los middleware funcionando. Si entramos en "traefik.midominio.xyz" deberíamos llegar a esta misma ventana.
+-Si entramos en "whoami.midominio.xyz" veremos una página de prueba de whoami. 
+-Si entramos en "portainer.midominio.xyz" podremos entrar en Portainer, igual que si entramos desde 192.168.x.x:9000.
+
+![image](https://github.com/user-attachments/assets/37d13f89-db6b-4941-9aac-67e6857ccaa9)
+
+
 
 ✅ **¡Todo listo!**  
 Con estos pasos tendrás Traefik funcionando como proxy inverso, con certificados Wildcard, DNS dinámico y gestión por Portainer.
