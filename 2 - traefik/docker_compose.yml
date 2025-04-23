@@ -16,9 +16,9 @@ services:
 #                       Cloudflare DDNS                               #
 #---------------------------------------------------------------------#
 
-  cloudflare-ddns-net:
+  cloudflare-ddns:
     image: favonia/cloudflare-ddns:latest
-    container_name: cloudflare-ddns-net
+    container_name: cloudflare-ddns
     restart: always
     cap_add:
       - SETUID
@@ -139,7 +139,4 @@ services:
       # Si usas certificado manual
       - "traefik.http.routers.portainer.tls.domains[0].main=portainer.midominio.xyz"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
-      # MIDDLEWARES
-      - "traefik.http.routers.portainer.middlewares=geo-block@file,rate-limit@file,secure-headers@file"
-      # Añadir el middleware de Authelia
-      #- "traefik.http.routers.portainer.middlewares=geo-block@file,rate-limit@file,secure-headers@file,authelia@docker"
+      # MIDDLEWARES configurados directamente en el dynamic.yml de traefik
