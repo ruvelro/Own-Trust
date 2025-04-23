@@ -1,0 +1,117 @@
+tls:
+  certificates:
+    - certFile: "/certs/wildcard.crt"
+      keyFile: "/certs/wildcard.key"
+
+http:
+  routers:
+    # 🔐 Traefik Dashboard
+    traefik-dashboard:
+      rule: Host(`traefik.midominio.xyz`) #El dominio que queremos usar para acceder
+      entryPoints:
+        - websecure
+      service: api@internal # Usa el servicio interno de Traefik
+      tls: {}  # Usa el wildcard por defecto
+      middlewares:
+        - geo-block
+        - rate-limit
+        - secure-headers
+        #- authelia@docker
+
+    # Portainer
+    portainer:
+      rule: "Host(`portainer.midominio.xyz`)" #El dominio que queremos usar para acceder
+      service: portainer
+      entryPoints:
+        - websecure
+      tls: {}
+      middlewares:
+        - geo-block
+        - rate-limit
+        - secure-headers
+        #- authelia@docker
+
+  #Repetir estos bloques para cada uno de los servicios que quieras añadir usando su IP. Por ejemplo, para todo lo que no instalemos en forma de Docker, como Plex, o Cockpit.
+
+
+    # 🌐 Redirección HTTP → HTTPS (para cualquier host, opcional según tu config)
+    redirect:
+      rule: "HostRegexp(`{any:.+}`)"
+      entryPoints:
+        - web
+      middlewares:
+        - redirect-to-https
+      service: noop
+      priority: 1
+
+  services:
+    # Portainer: todas las instrucciones para poder entrar al dominio
+    portainer:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.0.250:9000" # Cambia esto por la IP LOCAL de tu servidor donde ejecutas Docker, y el puerto (9000 por defecto) de Portainer 
+        passHostHeader: true
+        serversTransport: insecure-transport
+    #Repetir este bloque para cada uno de los servicios que quieras añadir usando su IP. Por ejemplo, para todo lo que no instalemos en forma de Docker, como Plex, o Cockpit.
+
+    # 🚫 Servicio falso usado para redirección HTTPS
+    noop:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1"
+
+  serversTransports:
+    # ⚠️ Permitir tráfico interno sin verificación SSL (por IP local con certificados autofirmados, por ejemplo)
+    insecure-transport:
+      insecureSkipVerify: true
+
+  middlewares:
+
+    # 🔁 Redirección HTTP → HTTPS
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    # 🔐 Cabeceras seguras para evitar ataques MITM, XSS, Clickjacking, etc.
+    secure-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        sslRedirect: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 63072000
+        referrerPolicy: "strict-origin-when-cross-origin"
+        permissionsPolicy: >
+          camera=(), geolocation=(), microphone=()
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "DENY"
+          X-XSS-Protection: "1; mode=block"
+          Server: ""  # Elimina header "Server" para ocultar tecnología del backend
+
+    # 🚨 Rate limiting - 100 req/s por IP con tolerancia de ráfagas
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    geo-block:
+      plugin:
+        geoblock:
+          silentStartUp: false
+          allowLocalRequests: true
+          logLocalRequests: false
+          logAllowedRequests: false
+          logApiRequests: true
+          api: "https://get.geojs.io/v1/ip/country/{ip}"
+          apiTimeoutMs: 750                                 # optional
+          cacheSize: 15
+          forceMonthlyUpdate: true
+          allowUnknownCountries: false
+          unknownCountryApiResponse: "nil"
+          countries:
+            - ES
+          

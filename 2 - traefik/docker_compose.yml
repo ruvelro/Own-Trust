@@ -1,0 +1,145 @@
+version: '3.9'
+
+#Ejecutar Docker Compose
+#sudo docker compose up -d --remove-orphans
+
+#Actualizar con los últimos "latest"
+#sudo docker compose down && docker compose build --pull && docker compose up -d
+
+networks:
+  mired:
+    external: true
+
+services:
+
+#---------------------------------------------------------------------#
+#                       Cloudflare DDNS                               #
+#---------------------------------------------------------------------#
+
+  cloudflare-ddns-net:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns-net
+    restart: always
+    cap_add:
+      - SETUID
+      - SETGID
+    cap_drop:
+      - all
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+      - CF_API_TOKEN=clave_del_token_de_cloudflare
+      - DOMAINS=ddns.midominio.xyz
+      - IP6_PROVIDER=none
+      - UPDATE_CRON=@every 60m
+
+#---------------------------------------------------------------------#
+#                           Traefik                                   #
+#---------------------------------------------------------------------#
+
+  traefik:
+    image: traefik:v3
+    container_name: traefik
+    networks:
+      - mired
+    restart: unless-stopped
+
+    command:
+      # Habilita el dashboard
+      - "--api.dashboard=true"
+      #- "--api.insecure=true"  # Puedes quitar esto cuando compruebes que el dashboard va con HTTPS
+
+      # Entrypoints HTTP (80) y HTTPS (443)
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # Nivel de logs (puedes cambiarlo a DEBUG para depurar)
+      - "--log.level=INFO"
+
+      # Usa el proveedor Docker para cargar servicios con etiquetas
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      # Usa también archivos de configuración dinámica
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+
+      # Define el certificado wildcard (usado de forma manual)
+      - "--certificatesResolvers.manualWildcard.acme.storage=/letsencrypt/acme.json"
+
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8999:8080"  # Dashboard accesible desde puerto 8999
+
+    volumes:
+      - /Docker/traefik/letsencrypt:/letsencrypt  # Traefik guardará aquí datos internos
+      - /Docker/traefik/certs:/certs:ro           # Certificados wildcard manuales
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - /Docker/traefik/config/traefik.yml:/etc/traefik/traefik.yml:ro
+      - /Docker/traefik/config/dynamic:/etc/traefik/dynamic
+
+#---------------------------------------------------------------------#
+#                            Whoami                                   #
+#---------------------------------------------------------------------#
+
+  whoami:
+    image: containous/whoami
+    container_name: whoami
+    networks:
+      - mired
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.midominio.xyz`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls=true"
+      # Si usas certificado automático
+      #- "traefik.http.routers.whoami.tls.certresolver=cloudflare"
+      # Si usas certificado manual
+      - "traefik.http.routers.whoami.tls.domains[0].main=whoami.midominio.xyz"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"
+      # MIDDLEWARES
+      - "traefik.http.routers.whoami.middlewares=geo-block@file,rate-limit@file,secure-headers@file"
+      # Añadir el middleware de Authelia
+      #- "traefik.http.routers.whoami.middlewares=geo-block@file,rate-limit@file,secure-headers@file,authelia@docker"
+
+#---------------------------------------------------------------------#
+#                           Portainer                                 #
+#---------------------------------------------------------------------#
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:sts
+    restart: always
+    networks:
+      - ruvelronet
+    ports:
+      - 9000:9000
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /Docker/portainer:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Madrid
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.midominio.xyz`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls=true"
+      # Si usas certificado automático
+      #- "traefik.http.routers.portainer.tls.certresolver=cloudflare"
+      # Si usas certificado manual
+      - "traefik.http.routers.portainer.tls.domains[0].main=portainer.midominio.xyz"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      # MIDDLEWARES
+      - "traefik.http.routers.portainer.middlewares=geo-block@file,rate-limit@file,secure-headers@file"
+      # Añadir el middleware de Authelia
+      #- "traefik.http.routers.portainer.middlewares=geo-block@file,rate-limit@file,secure-headers@file,authelia@docker"

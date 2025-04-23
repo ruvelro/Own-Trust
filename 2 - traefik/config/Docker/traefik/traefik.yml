@@ -1,0 +1,30 @@
+log:
+  level: INFO  # Puedes usar DEBUG si estás probando cosas nuevas
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https  # Redirige HTTP a HTTPS automáticamente
+  websecure:
+    address: ":443"
+
+api:
+  dashboard: true
+  insecure: true  # ⚠️ IMPORTANTE: Desactiva esto en producción (usa TLS y auth)
+
+providers:
+  docker:
+    exposedByDefault: false  # Solo contenedores con label explicitamente activado
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true  # Auto recarga de cambios en archivos dinámicos
+
+experimental:
+  plugins:
+    geoblock:
+      moduleName: "github.com/PascalMinder/geoblock"
+      version: "v0.3.2"
