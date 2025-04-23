@@ -230,7 +230,76 @@ Tiene que salir algo como "29 5 * * * "/home/ruvelro/.acme.sh"/acme.sh --cron --
 
 Listo. Ya tenemos nuestro generador de certificados wildcard instalado y configurado. Sigamos con Traefik.
 
-### 2️⃣ Instalar Traefik
+## 🚀 2️⃣ Instalar Traefik
+
+Llegados a este punto, ya tenemos en marcha nuestro generador de certificados **Wildcard SSL**.  
+Puedes comprobarlo visitando [crt.sh](https://crt.sh/) y buscando tu dominio. Verás un único certificado tipo `*.midominio.xyz`, en lugar de uno por cada subdominio individual. ¡Todo va según lo planeado!
+
+Ahora toca desplegar **Traefik**, nuestro **proxy inverso**.
+
+---
+
+### 🗂️ Estructura del proyecto
+
+Dentro del directorio `traefik/` del repositorio encontrarás:
+
+📄 **`docker-compose.yml`**  
+- Lanza y configura:
+  - 🌀 **Traefik** (proxy inverso)
+  - 🌐 **Cloudflare DDNS** (para mantener el dominio actualizado con tu IP)
+  - 🧪 Servicio de prueba **whoami**
+  - 📦 **Portainer**, para gestionar contenedores fácilmente
+
+📁 **`config/`**  
+- Contiene toda la configuración necesaria para Traefik.
+- Copia la carpeta `traefik` al directorio `/Docker/` de tu servidor.
+
+📄 **`traefik.yml`**  
+- Archivo de configuración **global** del proxy.
+
+📄 **`dynamic.yml`**  
+- Configuración **dinámica**:
+  - Middlewares
+  - Servicios externos (fuera de Docker, como Plex o Cockpit)
+  - ⚠️ Para servicios en Docker, mejor usar `labels`.
+
+---
+
+### ⚙️ Pasos previos antes de desplegar
+
+Una vez copiados los archivos al servidor (`docker-compose.yml` y carpeta `traefik/`), hay que hacer algunos ajustes:
+
+#### 🔧 Modificaciones en `docker-compose.yml`
+
+🛠️ Red de Docker:  
+- *(Opcional)* Cambia `mired` por otro nombre si lo deseas.  
+  ⚠️ Si lo haces, cambia también la red en todos los servicios que la usan.
+
+🔐 Servicio `cloudflare-ddns-net`:  
+- Reemplaza `CF_API_TOKEN` por tu token de Cloudflare (puedes usar el mismo que el del generador de certificados).  
+- Sustituye `midominio.xyz` en `DOMAINS` por tu dominio real.
+
+🌐 Labels de servicios:  
+- Cambia cada instancia de `midominio.xyz` por tu dominio.  
+  📌 Suele aparecer **dos veces por servicio**.
+
+---
+
+#### 🧩 Cambios en `dynamic.yml`
+
+🌍 Regla de host:  
+- Reemplaza todas las entradas `rule: Host(...)` con tu dominio real.  
+  - Puedes ajustar también el subdominio, por ejemplo:  
+    `traefik.midominio.xyz` → `proxy.tudominio.com`.
+
+💡 Servicios externos:  
+- En cada `url`, cambia la IP local (ej. `http://192.168.X.X:PORT`) por la correcta.  
+  - Aplica esto a todos los servicios **añadidos a mano** (no en Docker).
+
+---
+
+✅ **¡Todo listo!**  
+Con estos pasos tendrás Traefik funcionando como proxy inverso, con certificados Wildcard, DNS dinámico y gestión por Portainer.
 
 ### 3️⃣ Instalar Authelia
 
