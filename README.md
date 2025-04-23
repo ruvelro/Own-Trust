@@ -2,7 +2,7 @@
 
 **Own Trust** es una alternativa autoalojada a Cloudflare Zero Trust, diseñada para ofrecer **seguridad avanzada en redes y servicios personales**, sin depender de servicios en la nube de terceros.
 
-Este proyecto nace como respuesta a los **bloqueos masivos** que el mafioso *Tebas*, *LaLiga* y los operadores de Internet están realizando semana tras semana contra los CDN, afectando especialmente a quienes, como yo, **no tienen el más mínimo interés en el fútbol**.
+Este proyecto nace como respuesta a los **bloqueos masivos** que ciertas organizaciones, junto con los operadores de Internet, están realizando semana tras semana contra los CDN, afectando especialmente a quienes, como yo, **no tienen el más mínimo interés en el fútbol**.
 
 ## 🚀 ¿Qué incluye Own Trust?
 
@@ -22,7 +22,7 @@ Own Trust integra dos herramientas clave para garantizar la seguridad y el contr
 
 Own Trust nace con una idea muy clara:  
 > Que "los cuatro frikis" podamos **recuperar el control total** de nuestra infraestructura,  
-> evitando que la mafia de LaLiga te deje sin servicio cada fin de semana,  
+> evitando que cuando hay partido, cierta organización te deje sin servicio todo el fin de semana,  
 > y todo ello **sin renunciar a las funciones de seguridad esenciales**.
 
 ---
