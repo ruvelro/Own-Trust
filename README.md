@@ -497,3 +497,37 @@ Una vez realizados todos los cambios:
 - Reinicia tanto **Traefik** como **Authelia** para aplicar la nueva configuración.
 
 Desde este momento, toda tu infraestructura estará protegida por Authelia, actuando como una *Own Trust* para el control de acceso, incluso fuera del entorno de Cloudflare.
+
+### 4️⃣ Extras
+
+Llegados a este punto, ya tienes toda una infraestructura segura a prueba de bloqueos ilegales por parte de ciertas organizaciones o compañías telefónicas.  
+Y, aunque todo debería funcionar perfectamente, hay algunas configuraciones que se pueden afinar mejor para evitar problemas.
+
+#### Sacar las APIs de Authelia
+
+Puede ocurrir que tengamos un servicio, como **FreshRSS**, que queremos tener protegido, pero cuya **API** no funciona correctamente si pasa por Authelia.  
+En ese caso, lo que debemos hacer es crear una **ruta adicional dentro de Traefik** para que el tráfico destinado a la API no pase por Authelia (aunque sí por el resto de middlewares de seguridad).
+
+Esto se puede hacer fácilmente añadiendo una nueva definición de router en las *labels* del contenedor de Docker de FreshRSS, justo después de los middlewares generales. El bloque de configuración quedaría así:
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.freshrss.rule=Host(`freshrss.midominio.xyz`)"
+  - "traefik.http.routers.freshrss.entrypoints=websecure"
+  - "traefik.http.routers.freshrss.tls=true"
+  - "traefik.http.routers.freshrss.tls.domains[0].main=freshrss.midominio.xyz"
+  - "traefik.http.services.freshrss.loadbalancer.server.port=80"
+
+  # Middlewares generales (incluye Authelia)
+  - "traefik.http.routers.freshrss.middlewares=geo-block@file,rate-limit@file,secure-headers@file,authelia@docker"
+
+  # Router específico para la API, sin pasar por Authelia
+  - "traefik.http.routers.freshrss-api.rule=Host(`freshrss.midominio.xyz`) && PathPrefix(`/api/`)"
+  - "traefik.http.routers.freshrss-api.entrypoints=websecure"
+  - "traefik.http.routers.freshrss-api.tls=true"
+  - "traefik.http.routers.freshrss-api.tls.domains[0].main=freshrss.midominio.xyz"
+  - "traefik.http.routers.freshrss-api.service=freshrss"
+  - "traefik.http.routers.freshrss-api.middlewares=geo-block@file,rate-limit@file,secure-headers@file"
+```
+Puedes replicar esto mismo para otros servicios (como Home Assistant) a lo que les ocurra lo mismo.
