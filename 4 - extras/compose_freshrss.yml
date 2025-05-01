@@ -1,0 +1,42 @@
+version: '3.9'
+
+networks:
+  mired:
+    external: true
+
+services:
+
+  freshrss:
+    image: lscr.io/linuxserver/freshrss:latest
+    container_name: freshrss
+    hostname: freshrss
+    networks:
+      - mired
+    restart: always
+    security_opt:
+       - no-new-privileges:true
+    volumes:
+      - /Docker/freshrss:/config
+    environment:
+       - PUID=1000
+       - PGID=1000
+       - TZ=Europe/Madrid
+    labels:
+       - "traefik.enable=true"
+       - "traefik.http.routers.freshrss.rule=Host(`freshrss.midominio.xyz`)"
+       - "traefik.http.routers.freshrss.entrypoints=websecure"
+       - "traefik.http.routers.freshrss.tls=true"
+      # Si usas certificado automático
+      #- "traefik.http.routers.whoami.tls.certresolver=cloudflare"
+      # Si usas certificado manual
+       - "traefik.http.routers.freshrss.tls.domains[0].main=freshrss.midominio.xyz"
+       - "traefik.http.services.freshrss.loadbalancer.server.port=80"
+       # MIDDLEWARES
+       - "traefik.http.routers.freshrss.middlewares=geo-block@file,rate-limit@file,secure-headers@file,authelia@docker"
+       # Router específico para la API, sin Authelia
+       - "traefik.http.routers.freshrss-api.rule=Host(`freshrss.midominio.xyz`) && PathPrefix(`/api/`)"
+       - "traefik.http.routers.freshrss-api.entrypoints=websecure"
+       - "traefik.http.routers.freshrss-api.tls=true"
+       - "traefik.http.routers.freshrss-api.tls.domains[0].main=freshrss.midominio.xyz"
+       - "traefik.http.routers.freshrss-api.service=freshrss"
+       - "traefik.http.routers.freshrss-api.middlewares=geo-block@file,rate-limit@file,secure-headers@file"
