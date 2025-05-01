@@ -1,0 +1,100 @@
+# Configuración del servidor de Authelia
+server:
+  # Dirección y puerto donde Authelia escuchará
+  address: tcp://0.0.0.0:9091
+
+  # Buffers de lectura y escritura (puedes dejar estos valores por defecto)
+  buffers:
+    read: 4096
+    write: 4096
+
+  # Encabezados HTTP de seguridad. Aquí se define una plantilla CSP (Content Security Policy)
+  headers:
+    csp_template: default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'
+
+# Nivel de log. Puedes usar: trace, debug, info, warn, error, fatal
+log:
+  level: warn
+
+# Tema de la interfaz web: light, dark o auto (según el navegador del usuario)
+theme: auto
+
+# Configuración para restablecer contraseñas
+identity_validation:
+  reset_password:
+    # 🔐 Clave JWT para firmar los tokens de recuperación de contraseña
+    # ❗ Genera tu propia clave segura usando: openssl rand -hex 64
+    jwt_secret: "REEMPLAZAR_CON_TU_JWT_SECRET_GENERADO"
+
+# Configuración del sistema de autenticación TOTP (2FA con apps como Google Authenticator)
+totp:
+  # Nombre que aparecerá en la app TOTP
+  issuer: authelia.com
+  # Intervalo de tiempo en segundos para el código
+  period: 30
+  # Tolerancia de desfase entre reloj del servidor y del usuario
+  skew: 1
+
+# Sistema de autenticación principal. En este caso, basado en archivo.
+authentication_backend:
+  file:
+    # Ruta al archivo que contiene los usuarios y contraseñas (ver users_database.yml)
+    path: /config/users_database.yml
+    password:
+      # Algoritmo para hash de contraseñas. Se recomienda usar argon2id.
+      algorithm: argon2id
+
+# Control de acceso a los servicios
+access_control:
+  # Política por defecto (deny = nadie accede si no se define lo contrario)
+  default_policy: deny
+
+  # Reglas de acceso. Puedes añadir subdominios o rutas específicas.
+  rules:
+    - domain: "*.midominio.xyz"  # ⛔ Reemplaza con tu dominio real
+      policy: two_factor         # Solicita 2FA para todos los subdominios. Si no quieres doble autehticación, usa "one_factor".
+
+    # Ejemplo comentado para una regla específica
+    # - domain: "servicio.tudominio.com"
+    #   policy: two_factor
+
+# Configuración de la sesión del usuario
+session:
+  # Nombre de la cookie de sesión
+  name: authelia_session
+
+  # 🔐 Clave secreta usada para firmar cookies de sesión
+  # ❗ Genera tu propia clave usando: openssl rand -hex 64
+  secret: "REEMPLAZAR_CON_TU_SESSION_SECRET_GENERADO"
+
+  # Tiempo de expiración total de la sesión
+  expiration: 1h
+
+  # Tiempo de inactividad antes de cerrar sesión automáticamente
+  inactivity: 15m
+
+  # Duración de la sesión cuando el usuario marca "Recordarme"
+  remember_me: 2M
+
+  # Configuración de las cookies de sesión
+  cookies:
+    - name: authelia_session
+      domain: midominio.xyz  # ⛔ Reemplaza con tu dominio principal
+      authelia_url: https://auth.midominio.xyz  # 🔗 URL donde se ejecuta Authelia
+      default_redirection_url: https://midominio.xyz  # 🔗 A dónde redirige tras iniciar sesión
+
+# Almacenamiento interno de Authelia
+storage:
+  # 🔐 Clave de cifrado de datos internos
+  # ❗ Genera tu propia clave usando: openssl rand -hex 64
+  encryption_key: "REEMPLAZAR_CON_TU_ENCRYPTION_KEY_GENERADA"
+
+  # Base de datos local en formato SQLite
+  local:
+    path: /config/db.sqlite3
+
+# Configuración del sistema de notificaciones (por ejemplo, para recuperación de contraseña)
+notifier:
+  # En este caso se usa el sistema de archivos como destino
+  filesystem:
+    filename: /config/notification.txt  # Aquí se escriben las notificaciones (útil en pruebas)

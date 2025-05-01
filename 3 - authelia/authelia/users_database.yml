@@ -1,0 +1,26 @@
+users:  # Sección principal donde se definen los usuarios autorizados
+    nombre_usuario:  # Reemplaza esto por el nombre de usuario que desees (login)
+        password: <hash_argon2id>  # Contraseña cifrada con Argon2id. Se genera con:
+        # docker run -it --rm authelia/authelia:latest authelia crypto hash generate
+        displayname: Nombre Visible  # Nombre visible del usuario (opcional)
+        email: usuario@dominio.com  # Correo electrónico del usuario (necesario para recuperación o 2FA por email)
+        groups:  # Lista de grupos a los que pertenece el usuario
+            - grupo1  # Por ejemplo: admins, users, invitados, etc.
+        given_name: ""  # Nombre (opcional)
+        middle_name: ""  # Segundo nombre (opcional)
+        family_name: ""  # Apellido (opcional)
+        nickname: ""  # Apodo (opcional)
+        gender: ""  # Género (opcional)
+        birthdate: ""  # Fecha de nacimiento (opcional)
+        website: ""  # Página web del usuario (opcional)
+        profile: ""  # URL del perfil del usuario (opcional)
+        picture: ""  # URL a una imagen de perfil (opcional)
+        zoneinfo: ""  # Zona horaria (por ejemplo, Europe/Madrid)
+        locale: ""  # Idioma preferido (por ejemplo, es-ES)
+        phone_number: ""  # Número de teléfono (opcional)
+        phone_extension: ""  # Extensión telefónica (opcional)
+        disabled: false  # Si se establece en true, el usuario no podrá autenticarse
+        address: null  # Información de dirección (opcional, puede ser un objeto con datos estructurados)
+        extra: {}  # Campo para información adicional personalizada (clave-valor)
+    # Puedes añadir más usuarios siguiendo el mismo formato
+    
