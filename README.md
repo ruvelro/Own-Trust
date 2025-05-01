@@ -316,11 +316,184 @@ Podemos comprobarlo fácilmente:
 ✅ **¡Todo listo!**  
 Con estos pasos tendrás Traefik funcionando como proxy inverso, con certificados Wildcard, DNS dinámico y gestión por Portainer.
 
-### 3️⃣ Instalar Authelia
+## 3️⃣ Instalar Authelia
+
+Una vez que ya tenemos nuestro servidor y servicios protegidos, podemos añadir una **capa extra de seguridad** mediante **Authelia**, un middleware de autenticación avanzada.
+
+### 🔐 ¿Qué es Authelia y por qué usarlo?
+
+Authelia actúa como una **pasarela de autenticación** antes de acceder a tus servicios. Esto tiene varias ventajas:
+
+- ✅ **Login unificado**: Puedes desactivar los logins internos de servicios como *Servarr* y gestionar todo desde Authelia.
+- 🧩 **Añade un login** a los servicios que no lo tienen. Por ejemplo, si tienes "homepage" o "Glances".
+- 🔒 **Autenticación en dos pasos**: Añade una segunda capa de seguridad mediante OTP o WebAuthn.
+- 🛡️ **Blindaje ante ataques**: Si un atacante descubre un subdominio (por ejemplo, `portainer.tudominio.xyz`), no podrá alcanzar el servicio final sin autenticarse en Authelia. Si el subdominio no es descriptivo, **ni siquiera sabrá qué servicio hay detrás**.
+
+---
+
+### 🗂️ Estructura del Proyecto
+
+Para desplegar Authelia, crearemos una carpeta llamada `authelia` dentro del directorio `/Docker`.
+
+En el directorio `authelia/` de este repositorio encontrarás:
+
+#### 📄 `docker-compose.yml`
+- Despliega y configura:
+  - 🌀 **Authelia** (como servicio de autenticación)
+
+#### 📄 `configuration.yml`
+- Archivo de configuración **global** de Authelia.
+- Define estrategias de autenticación, métodos de acceso, etc.
+
+#### 📄 `users_database.yml`
+- Contiene la **base de datos de usuarios**.
+- Aquí defines los usuarios, contraseñas y métodos 2FA.
+
+---
+
+Authelia requiere permisos más estrictos por razones de seguridad. Por eso, **te recomendamos preparar únicamente el directorio `/Docker/authelia`**, y dejar el resto de archivos para después del despliegue.
+
+### 🚀 Despliegue inicial
+
+1. Copia el archivo `docker-compose.yml` al servidor.
+2. Dentro del `docker-compose.yml` cambia todos los "midominio.xyz" por tu propio dominio. El subdominio (auth) no debes cambiarlo.
+3. Accede al directorio donde lo colocaste.
+4. Lanza el servicio con: sudo docker compose up -d --remove-orphans
+5. Si todo funciona correctamente, Authelia se desplegará pero no estará operativo aún hasta que lo configures.
+
+👉 En el siguiente paso te explicaremos cómo hacerlo.
+
+### 🛠 Configuración inicial de Authelia
+
+#### 1. Configurar `configuration.yml`
+
+Primero, accedemos al directorio `/Docker/authelia` para editar el archivo de configuración.
+
+Copiamos todo el contenido del archivo `configuration.yml` que se encuentra en el repositorio y lo pegamos en el archivo local. **Antes de guardar, es necesario modificar los siguientes valores:**
+
+- **`jwt_secret`** (dentro de `identity_validation`)  
+  Ejecutar `openssl rand -hex 64` para generar una clave segura. La clave se coloca dentro de comillas.
+
+- **`domain`** (dentro de `rules`)  
+  Sustituir por tu dominio real.
+
+- **`secret`** (dentro de `session`)  
+  Ejecutar `openssl rand -hex 64` para generar una clave segura. La clave se coloca dentro de comillas.
+
+- **`domain`** (dentro de `cookies`)  
+  Sustituir por tu dominio real.
+
+- **`authelia_url`** (dentro de `cookies`)  
+  Introducir la URL en la que se desplegará Authelia (por ejemplo, `https://auth.midominio.xyz`).
+
+- **`default_redirection_url`** (dentro de `cookies`)  
+  URL a la que se redirigirá tras un inicio de sesión exitoso.
+
+- **`encryption_key`** (dentro de `storage`)  
+  Ejecutar `openssl rand -hex 64` para generar una clave segura. La clave se coloca dentro de comillas.
+
+Una vez hechos estos cambios, el archivo `configuration.yml` estará listo.
+
+---
+
+#### 2. Configurar `users_database.yml`
+
+Abrimos el archivo `users_database.yml` y reemplazamos su contenido por el que aparece en el repositorio. A continuación, modificamos los siguientes campos:
+
+- **`nombre_usuario`**  
+  El nombre del usuario que se usará para iniciar sesión.
+
+- **`password`**  
+  Contraseña cifrada. Se puede generar ejecutando:  
+  `docker run -it --rm authelia/authelia:latest authelia crypto hash generate`
+
+- **`email`**  
+  Dirección de correo del usuario.
+
+- **`grupo1`**  
+  Grupo al que pertenecerá el usuario (por ejemplo: `admins`, `users`, etc.).
+
+---
+
+Una vez configurados ambos archivos, Authelia estará listo para funcionar correctamente. 
+Reiniciamos el docker con "sudo docker-compose restart authelia" y todo debería estar ya funcionando. 
+Podemos probarlo entrando en "auth.midominio.xyz" (el que hayamos configurado en authelia_url, dentro de la configutación) y podremos ver la pantalla de Login de Authelia. 
+
+![image](https://github.com/user-attachments/assets/e95cdf6e-bc39-488b-95a4-381802054d35)
 
 
+Si introducimos el usuario y la contraseña que hemos configurado en el archivo "users_database.yml", podremos iniciar sesión. 
+
+### 🧩 Añadir Authelia a los servicios dentro de Traefik
+
+Ya tenemos Authelia funcionando. Pero, para que se aplique a cada subdominio, debemos realizar algunos ajustes sencillos en la configuración de Traefik.
+
+---
+
+#### ✅ Aplicar el middleware a servicios en Docker
+
+El primer paso es añadir, en las *labels* de todos los servicios definidos en Docker, la etiqueta que permite usar el middleware de Authelia.
+
+Para ello, localiza la línea donde se definen los middlewares del router Traefik en cada contenedor y añade `authelia@docker` al final de la lista. El resultado debe verse así:
+
+**Ejemplo de configuración de middlewares:**
+
+MIDDLEWARES
+      - "traefik.http.routers.portainer.middlewares=geo-block@file,rate-limit@file,secure-headers@file,authelia@docker"
+
+> 💡 Es importante que `authelia@docker` vaya **al final**, ya que debe ser el último middleware en ejecutarse.
+
+---
+
+#### 🖧 Aplicar el middleware a servicios fuera de Docker (modo host)
+
+Si tienes servicios que no están gestionados directamente por Docker (por ejemplo, Plex en modo host), deberás definir manualmente el middleware dentro del archivo dinámico de configuración de Traefik, normalmente llamado `dynamic.yml`.
+
+**Ejemplo de router para Plex:**
+
+#🎬 Plex
+    plex:
+      rule: "Host(`plex.midominio.xyz`)"
+      service: plex
+      entryPoints:
+        - websecure
+      tls: {}
+      middlewares:
+        - geo-block
+        - rate-limit
+        - secure-headers
+        - authelia@docker <--- Este es el importante
 
 
+---
+
+#### 🔐 Middleware Authelia en Traefik
+
+Para que `authelia@docker` funcione, Authelia debe estar registrado como un middleware en Traefik mediante las *labels* de su propio contenedor.
+
+Si seguiste la guía de despliegue inicial, esto ya debería estar configurado. No obstante, asegúrate de incluir las siguientes etiquetas en el contenedor de Authelia:
+
+- Definir la dirección del endpoint de verificación.
+- Permitir el reenvío de cabeceras.
+- Especificar qué cabeceras se deben devolver al cliente autenticado.
+
+**Etiquetas necesarias para el contenedor de Authelia:**
+
+labels:
+  - "traefik.http.middlewares.authelia.forwardauth.address=http://authelia:9091/api/verify"
+  - "traefik.http.middlewares.authelia.forwardauth.trustForwardHeader=true"
+  - "traefik.http.middlewares.authelia.forwardauth.authResponseHeaders=Remote-User,Remote-Groups,Remote-Name,Remote-Email"
 
 
+Con estas etiquetas, se define correctamente el middleware `authelia@docker`, que puede aplicarse a cualquier router en Traefik, ya sea gestionado por Docker o definido manualmente.
 
+---
+
+#### 🚀 Finalizar e iniciar protección
+
+Una vez realizados todos los cambios:
+
+- Revisa que todos los servicios que quieras proteger tengan el middleware `authelia@docker` aplicado.
+- Reinicia tanto **Traefik** como **Authelia** para aplicar la nueva configuración.
+
+Desde este momento, toda tu infraestructura estará protegida por Authelia, actuando como una *Own Trust* para el control de acceso, incluso fuera del entorno de Cloudflare.
