@@ -498,12 +498,12 @@ Una vez realizados todos los cambios:
 
 Desde este momento, toda tu infraestructura estará protegida por Authelia, actuando como una *Own Trust* para el control de acceso, incluso fuera del entorno de Cloudflare.
 
-### 4️⃣ Extras
+## 4️⃣ Extras
 
 Llegados a este punto, ya tienes toda una infraestructura segura a prueba de bloqueos ilegales por parte de ciertas organizaciones o compañías telefónicas.  
 Y, aunque todo debería funcionar perfectamente, hay algunas configuraciones que se pueden afinar mejor para evitar problemas.
 
-#### Sacar las APIs de Authelia
+### Sacar las APIs de Authelia
 
 Puede ocurrir que tengamos un servicio, como **FreshRSS**, que queremos tener protegido, pero cuya **API** no funciona correctamente si pasa por Authelia.  
 En ese caso, lo que debemos hacer es crear una **ruta adicional dentro de Traefik** para que el tráfico destinado a la API no pase por Authelia (aunque sí por el resto de middlewares de seguridad).
