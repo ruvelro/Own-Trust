@@ -81,7 +81,10 @@ Para desplegar **Own Trust** en tu entorno personal, necesitas cumplir con algun
   - Lectura y edición de archivos YAML
 
 ### 🌍 Puertos abiertos
-- Para que Traefik pueda trabajar en condiciones, necesitaremos abrir dos puertos en nuestro router: el 80 (para HTTP) y el 443 (para HTTPS). Aunque esto nos expone en la red, no hay problema, ya que Traefik interceptará todas las conexiones. 
+- Para que Traefik pueda trabajar en condiciones, necesitaremos abrir dos puertos en nuestro router: el 80 (para HTTP) y el 443 (para HTTPS). Aunque esto nos expone en la red, no hay problema, ya que Traefik interceptará todas las conexiones.
+
+### 🌍 IP Pública
+- Necesitamos que nuestro operador nos esté dando una IP real para conectarnos a Internet. Si estamos dentro de un CG-NAT, no podrás usar Own Trust, porque no podrás conectarte desde fuera a tu IP.
   
 ### 🔒 (Opcional) Autenticación de Dos Factores
 - Para usar Authelia con 2FA, necesitarás, al menos, una de estas opciones:
